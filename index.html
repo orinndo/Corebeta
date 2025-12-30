@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>コアベータ投与 音声ガイド</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --line: #e5e5e7;
+    --text: #111;
+    --muted: #666;
+    --btn: #f3f4f6;
+    --btnline: #d1d5db;
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Segoe UI", sans-serif;
+    margin: 18px;
+    line-height: 1.6;
+    color: var(--text);
+    background: var(--bg);
+  }
+  h1 { margin: 0 0 6px; font-size: 26px; }
+  .sub { margin: 0 0 14px; color: var(--muted); font-size: 14px; }
+  .panel { border: 1px solid var(--line); border-radius: 14px; padding: 16px; background: #fff; }
+  .badge { display: inline-block; padding: 6px 10px; border-radius: 999px; background: #f3f4f6; color: #444; font-size: 14px; margin-bottom: 8px; }
+  select { width: 100%; font-size: 18px; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--btnline); background: #fff; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 10px; }
+  button { font-size: 16px; padding: 10px 14px; border-radius: 12px; border: 1px solid var(--btnline); background: var(--btn); cursor: pointer; }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  .label { font-size: 13px; color: var(--muted); margin: 14px 0 6px; }
+  .jp { font-size: 22px; font-weight: 600; }
+  .en { font-size: 18px; }
+  .btnbar button { min-width: 160px; }
+  .status { margin-top: 10px; color: var(--muted); font-size: 14px; }
+  .footer { margin-top: 12px; }
+  audio { width: 100%; }
+  .note { margin-top: 8px; color: var(--muted); font-size: 14px; }
+</style>
+</head>
+<body>
+
+<h1>コアベータ投与 音声ガイド</h1>
+<p class="sub">※必ず GitHub Pages（https://◯◯.github.io/...）の URL で開いてください。<br>
+iPhoneでは自動再生できないため、下の再生ボタンを押してください。</p>
+
+<div class="panel">
+  <div class="badge">ステップ選択</div>
+  <select id="stepSelect" aria-label="ステップ選択"></select>
+
+  <div class="row">
+    <button id="prevBtn">← 前</button>
+    <button id="nextBtn">次 →</button>
+  </div>
+
+  <div class="label">日本語（内容）</div>
+  <div class="jp" id="jpText"></div>
+
+  <div class="label">English（Script）</div>
+  <div class="en" id="enText"></div>
+
+  <div class="row btnbar" style="margin-top:14px;">
+    <button id="playBtn">▶ 再生 / Play</button>
+    <button id="pauseBtn">⏸ 一時停止 / Pause</button>
+    <button id="replayBtn">↻ もう一度 / Replay</button>
+  </div>
+
+  <div class="status" id="statusText">待機中 / Ready</div>
+
+  <div class="footer">
+    <audio id="player" controls preload="none"></audio>
+    <div class="note">再生されない場合は、下のコントロール（▶）からも再生できます。</div>
+  </div>
+</div>
+
+<script>
+  const steps = [{"num": 1, "file": "audio/01.caf", "jp": "これからコアベータを投与します。", "en": "Your heart rate is a bit high, so we’ll give you some medicine to help lower it."}, {"num": 2, "file": "audio/02.caf", "jp": "この薬は心拍数を下げて、検査の画像をきれいにするために使います。", "en": "The nurse will inject the medicine slowly over one minute."}, {"num": 3, "file": "audio/03.caf", "jp": "血圧や脈が下がることがあります。", "en": "I’ll take your blood pressure a few times."}, {"num": 4, "file": "audio/04.caf", "jp": "気分が悪い、めまい、息苦しさがあればすぐに教えてください。", "en": "Your heart rate is stable now, so we’ll start the scan."}];
+
+  const sel = document.getElementById("stepSelect");
+  const prevBtn = document.getElementById("prevBtn");
+  const nextBtn = document.getElementById("nextBtn");
+  const playBtn = document.getElementById("playBtn");
+  const pauseBtn = document.getElementById("pauseBtn");
+  const replayBtn = document.getElementById("replayBtn");
+  const jpText = document.getElementById("jpText");
+  const enText = document.getElementById("enText");
+  const statusText = document.getElementById("statusText");
+  const player = document.getElementById("player");
+
+  let idx = 0;
+
+  function buildSelect() {
+    sel.innerHTML = "";
+    steps.forEach((s, i) => {
+      const opt = document.createElement("option");
+      opt.value = i;
+      const num = String(s.num).padStart(2,'0');
+      opt.textContent = `${num}. ${s.jp || ""}`;
+      sel.appendChild(opt);
+    });
+  }
+
+  function updateNav() {
+    prevBtn.disabled = (idx === 0);
+    nextBtn.disabled = (idx === steps.length - 1);
+  }
+
+  function loadStep(i) {
+    idx = Math.max(0, Math.min(steps.length - 1, i));
+    sel.value = idx;
+    jpText.textContent = steps[idx].jp || "";
+    enText.textContent = steps[idx].en || "";
+    player.pause();
+    player.currentTime = 0;
+    player.src = steps[idx].file;
+    statusText.textContent = "待機中 / Ready";
+    updateNav();
+  }
+
+  buildSelect();
+  loadStep(0);
+
+  sel.addEventListener("change", (e) => loadStep(parseInt(e.target.value, 10)));
+  prevBtn.addEventListener("click", () => loadStep(idx - 1));
+  nextBtn.addEventListener("click", () => loadStep(idx + 1));
+
+  playBtn.addEventListener("click", () => {
+    player.play().then(()=>{ statusText.textContent = "再生中 / Playing"; }).catch(()=>{});
+  });
+  pauseBtn.addEventListener("click", () => {
+    player.pause();
+    statusText.textContent = "一時停止 / Paused";
+  });
+  replayBtn.addEventListener("click", () => {
+    player.pause();
+    player.currentTime = 0;
+    player.play().then(()=>{ statusText.textContent = "再生中 / Playing"; }).catch(()=>{});
+  });
+
+  player.addEventListener("ended", () => {
+    statusText.textContent = "完了 / Done";
+  });
+</script>
+
+</body>
+</html>
